@@ -1,0 +1,208 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { notFound } from "next/navigation";
+import { ItemGrid } from "@/components/marketplace/item-grid";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, Grid3X3, List, ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { supabase } from "@/lib/supabase";
+import { Listing } from "@/lib/supabase";
+
+interface CategoryPageClientProps {
+  categoryName: string;
+}
+
+export function CategoryPageClient({ categoryName }: CategoryPageClientProps) {
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedPriceRange, setSelectedPriceRange] = useState("all");
+
+  // Fetch listings for this category
+  useEffect(() => {
+    async function fetchCategoryListings() {
+      try {
+        const { data, error } = await supabase
+          .from('listings')
+          .select('*')
+          .eq('category', categoryName)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Supabase error:', error);
+          return;
+        }
+
+        setListings(data || []);
+      } catch (error) {
+        console.error('Exception:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchCategoryListings();
+  }, [categoryName]);
+
+  // Transform Supabase data to match the expected format
+  const transformedItems = listings.map(listing => ({
+    id: listing.id,
+    title: listing.title,
+    description: listing.description || "No description available",
+    price: listing.price,
+    location: listing.location,
+    imageUrl: listing.image_url,
+    imageUrls: listing.image_urls || [],
+    category: listing.category,
+    sellerEmail: listing.seller_email,
+    createdAt: listing.created_at
+  }));
+
+  // Filter items based on search and price range
+  const filteredItems = transformedItems.filter(item => {
+    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         item.location.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // Price range filtering
+    let matchesPrice = true;
+    if (selectedPriceRange !== "all") {
+      const price = item.price;
+      switch (selectedPriceRange) {
+        case "0-50":
+          matchesPrice = price >= 0 && price <= 50;
+          break;
+        case "50-100":
+          matchesPrice = price > 50 && price <= 100;
+          break;
+        case "100-500":
+          matchesPrice = price > 100 && price <= 500;
+          break;
+        case "500-1000":
+          matchesPrice = price > 500 && price <= 1000;
+          break;
+        case "1000-2000":
+          matchesPrice = price > 1000 && price <= 2000;
+          break;
+        case "2000-5000":
+          matchesPrice = price > 2000 && price <= 5000;
+          break;
+        case "5000+":
+          matchesPrice = price > 5000;
+          break;
+      }
+    }
+    
+    return matchesSearch && matchesPrice;
+  });
+
+  if (!categoryName) {
+    notFound();
+  }
+
+  // If no items found, show "No items found" message
+  if (filteredItems.length === 0) {
+    return (
+      <div className="space-y-6">
+        {/* Page Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center space-x-4">
+            <Link href="/">
+              <Button variant="ghost" size="sm" className="p-2">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">{categoryName}</h1>
+              <p className="text-gray-600 mt-1">0 items in {categoryName}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* No items found message */}
+        <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+            <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">No items found</h3>
+          <p className="text-gray-500 mb-6 max-w-md">
+            There are currently no items in the {categoryName} category. Be the first to list something!
+          </p>
+          <Link href="/create" className="inline-block">
+            <Button className="bg-[#1877F2] hover:bg-[#166FE5] text-white px-6 py-2 rounded-full shadow-md">
+              Create listing
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center space-x-4">
+          <Link href="/">
+            <Button variant="ghost" size="sm" className="p-2">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{categoryName}</h1>
+            <p className="text-gray-600 mt-1">{filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''} in {categoryName}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Results Count */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-600">
+          {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''} found
+        </p>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Search in this category..."
+              className="pl-10 h-9 focus:border-[#1877F2] focus:ring-1 focus:ring-[#1877F2] focus:ring-opacity-50 focus:outline-none"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          {/* Price Filter */}
+          <div className="flex justify-end">
+            <Select value={selectedPriceRange} onValueChange={setSelectedPriceRange}>
+              <SelectTrigger className="h-12 text-base px-4 w-full focus:border-[#1877F2] focus:ring-1 focus:ring-[#1877F2] focus:ring-opacity-50 focus:outline-none">
+                <SelectValue placeholder="Filter by price" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Prices</SelectItem>
+                <SelectItem value="0-50">$0 - $50</SelectItem>
+                <SelectItem value="50-100">$50 - $100</SelectItem>
+                <SelectItem value="100-500">$100 - $500</SelectItem>
+                <SelectItem value="500-1000">$500 - $1,000</SelectItem>
+                <SelectItem value="1000-2000">$1,000 - $2,000</SelectItem>
+                <SelectItem value="2000-5000">$2,000 - $5,000</SelectItem>
+                <SelectItem value="5000+">$5,000+</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      {/* Items Grid */}
+      <ItemGrid items={filteredItems} />
+    </div>
+  );
+} 
