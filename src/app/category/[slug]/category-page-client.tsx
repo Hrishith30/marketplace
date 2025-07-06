@@ -6,7 +6,7 @@ import { ItemGrid } from "@/components/marketplace/item-grid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Grid3X3, List, ArrowLeft } from "lucide-react";
+import { Search, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { Listing } from "@/lib/supabase";
@@ -17,7 +17,6 @@ interface CategoryPageClientProps {
 
 export function CategoryPageClient({ categoryName }: CategoryPageClientProps) {
   const [listings, setListings] = useState<Listing[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPriceRange, setSelectedPriceRange] = useState("all");
 
@@ -39,8 +38,6 @@ export function CategoryPageClient({ categoryName }: CategoryPageClientProps) {
         setListings(data || []);
       } catch (error) {
         console.error('Exception:', error);
-      } finally {
-        setLoading(false);
       }
     }
 

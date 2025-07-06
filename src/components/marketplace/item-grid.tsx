@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 
-import { MapPin, Heart, Share2, ChevronLeft, ChevronRight } from "lucide-react";
+import { MapPin, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import ItemDetailModal from "./item-detail-modal";
@@ -17,8 +17,8 @@ interface Item {
   imageUrls?: string[]; // For multiple images
   category: string;
   createdAt: string;
-  description?: string;
-  sellerEmail?: string;
+  description: string;
+  sellerEmail: string;
   sellerPhone?: string;
 }
 

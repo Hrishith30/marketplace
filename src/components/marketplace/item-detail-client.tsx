@@ -14,15 +14,25 @@ import {
   MessageCircle, 
   Heart, 
   Share2, 
-  Flag,
-  Mail,
-  Phone,
-  Clock
+  Flag
 } from "lucide-react";
 import Link from "next/link";
 
+interface Item {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  location: string;
+  imageUrl: string;
+  imageUrls?: string[];
+  category: string;
+  sellerEmail: string;
+  createdAt: string;
+}
+
 interface ItemDetailClientProps {
-  item: any;
+  item: Item;
 }
 
 export default function ItemDetailClient({ item }: ItemDetailClientProps) {
@@ -202,7 +212,7 @@ export default function ItemDetailClient({ item }: ItemDetailClientProps) {
                 />
               </div>
               <Textarea
-                placeholder="Hi! I'm interested in this item. Could you tell me more about it?"
+                placeholder="Hi! I am interested in this item. Could you tell me more about it?"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 rows={4}
@@ -216,7 +226,7 @@ export default function ItemDetailClient({ item }: ItemDetailClientProps) {
                 {isSending ? "Sending..." : "Send Message"}
               </Button>
               <p className="text-xs text-gray-500 text-center">
-                Your message will be sent to the seller's email address
+                Your message will be sent to the seller email address
               </p>
             </CardContent>
           </Card>

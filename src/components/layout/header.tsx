@@ -1,10 +1,7 @@
 "use client";
 
-import { Search, Plus, Bell, User, Menu } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
 import Link from "next/link";
 
 export function Header() {

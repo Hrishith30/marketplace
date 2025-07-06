@@ -61,14 +61,7 @@ interface ImageFile {
   uploadedUrl?: string;
 }
 
-const conditions = [
-  "New",
-  "Like New", 
-  "Excellent",
-  "Good",
-  "Fair",
-  "Poor"
-];
+
 
 export default function CreateListingPage() {
   const router = useRouter();
@@ -134,7 +127,7 @@ export default function CreateListingPage() {
     }, 100);
 
     try {
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('listing-images')
         .upload(filePath, file, {
           cacheControl: '3600',
@@ -265,7 +258,7 @@ export default function CreateListingPage() {
           <CardHeader>
             <CardTitle>Basic Information</CardTitle>
             <CardDescription>
-              Tell people what you're selling
+              Tell people what you are selling
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

@@ -5,110 +5,9 @@ import { ItemGrid } from "@/components/marketplace/item-grid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Filter, Grid3X3, List } from "lucide-react";
+import { Search } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Listing } from "@/lib/supabase";
-import Link from "next/link";
-
-// Mock data for development
-const mockItems = [
-  {
-    id: "1",
-    title: "iPhone 13 Pro - Excellent Condition",
-    description: "Selling my iPhone 13 Pro in excellent condition. 256GB storage, Pacific Blue color. Includes original box, charger, and protective case. No scratches or damage. Battery health at 92%. Perfect for anyone looking for a high-quality iPhone at a great price.",
-    price: 799,
-    location: "Palo Alto, CA",
-    imageUrl: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop",
-    category: "Electronics",
-    sellerEmail: "john.doe@example.com",
-    sellerPhone: "+1 (555) 123-4567",
-    createdAt: "2024-01-15T10:30:00Z"
-  },
-  {
-    id: "2",
-    title: "Vintage Leather Jacket - Size M",
-    description: "Beautiful vintage leather jacket in excellent condition. Size M, perfect fit. Made from high-quality leather with classic styling. No tears or damage, just some natural patina that adds character. Great for motorcycle riding or casual wear.",
-    price: 85,
-    location: "Mountain View, CA",
-    imageUrl: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&h=400&fit=crop",
-    category: "Clothing",
-    sellerEmail: "mike.wilson@example.com",
-    sellerPhone: "+1 (555) 234-5678",
-    createdAt: "2024-01-14T15:45:00Z"
-  },
-  {
-    id: "3",
-    title: "Nintendo Switch OLED - Like New",
-    description: "Nintendo Switch OLED model in like-new condition. White version, barely used. Includes original box, dock, controllers, and all cables. No scratches or damage. Perfect for gaming on the go or at home.",
-    price: 299,
-    location: "San Jose, CA",
-    imageUrl: "https://images.unsplash.com/photo-1578303512597-81e6cc155b3e?w=400&h=400&fit=crop",
-    category: "Electronics",
-    sellerEmail: "sarah.garcia@example.com",
-    sellerPhone: "+1 (555) 345-6789",
-    createdAt: "2024-01-13T09:20:00Z"
-  },
-  {
-    id: "4",
-    title: "IKEA Desk Chair - Ergonomic",
-    description: "High-quality ergonomic desk chair from IKEA. Excellent condition, very comfortable for long work sessions. Adjustable height and backrest. Perfect for home office or gaming setup. No stains or damage.",
-    price: 120,
-    location: "Redwood City, CA",
-    imageUrl: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop",
-    category: "Home & Garden",
-    sellerEmail: "david.chen@example.com",
-    sellerPhone: "+1 (555) 456-7890",
-    createdAt: "2024-01-12T14:15:00Z"
-  },
-  {
-    id: "5",
-    title: "MacBook Air M2 - 2023 Model",
-    description: "MacBook Air with M2 chip, 8GB RAM, 256GB SSD. Space Gray color. Purchased in March 2023, still under AppleCare warranty. Perfect condition, no scratches or dents. Comes with original charger and box.",
-    price: 999,
-    location: "Menlo Park, CA",
-    imageUrl: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400&h=400&fit=crop",
-    category: "Electronics",
-    sellerEmail: "sarah.smith@example.com",
-    sellerPhone: "+1 (555) 987-6543",
-    createdAt: "2024-01-11T11:30:00Z"
-  },
-  {
-    id: "6",
-    title: "Road Bike - Trek Domane",
-    description: "Trek Domane road bike in excellent condition. Carbon frame, Shimano 105 groupset. Perfect for road cycling and long-distance rides. Recently serviced, all components working perfectly. Includes bike computer and lights.",
-    price: 450,
-    location: "Sunnyvale, CA",
-    imageUrl: "https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?w=400&h=400&fit=crop",
-    category: "Sports",
-    sellerEmail: "alex.rodriguez@example.com",
-    sellerPhone: "+1 (555) 567-8901",
-    createdAt: "2024-01-10T16:45:00Z"
-  },
-  {
-    id: "7",
-    title: "Guitar - Fender Stratocaster",
-    description: "Fender Stratocaster electric guitar in great condition. Classic sunburst finish, maple neck. Includes hard case and strap. Perfect for beginners or experienced players. Recently set up and ready to play.",
-    price: 650,
-    location: "Cupertino, CA",
-    imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop",
-    category: "Musical Instruments",
-    sellerEmail: "james.miller@example.com",
-    sellerPhone: "+1 (555) 678-9012",
-    createdAt: "2024-01-09T13:20:00Z"
-  },
-  {
-    id: "8",
-    title: "Coffee Table - Modern Design",
-    description: "Modern coffee table with clean lines and elegant design. Made from solid wood with metal legs. Perfect condition, no scratches or damage. Great for living room or family room. Easy to assemble.",
-    price: 75,
-    location: "Los Altos, CA",
-    imageUrl: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop",
-    category: "Home & Garden",
-    sellerEmail: "emma.davis@example.com",
-    sellerPhone: "+1 (555) 789-0123",
-    createdAt: "2024-01-08T10:10:00Z"
-  }
-];
 
 export default function HomePage() {
   const [listings, setListings] = useState<Listing[]>([]);
@@ -116,7 +15,6 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedPriceRange, setSelectedPriceRange] = useState("all");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   // Fetch listings from Supabase
   useEffect(() => {
@@ -294,9 +192,6 @@ export default function HomePage() {
               </SelectContent>
             </Select>
           </div>
-
-          {/* View Mode Toggle */}
-          {/* Removed grid/list toggle icons */}
         </div>
 
         {/* Active Filters */}
@@ -305,7 +200,7 @@ export default function HomePage() {
             <span className="text-sm text-gray-500">Active filters:</span>
             {searchQuery && (
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                Search: "{searchQuery}"
+                Search: &quot;{searchQuery}&quot;
               </span>
             )}
             {selectedCategory !== "all" && (
