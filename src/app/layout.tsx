@@ -6,6 +6,7 @@ import "@fontsource/inter/700.css";
 import "./globals.css";
 import { Header } from "@/components/layout/header";
 import { Sidebar } from "@/components/layout/sidebar";
+import { Footer } from "@/components/layout/footer";
 
 export const metadata: Metadata = {
   title: "Marketplace - Buy and Sell Locally",
@@ -19,14 +20,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="bg-gray-50">
-      <body className="font-geist antialiased min-h-screen text-gray-900 bg-gray-50">
+      <body className="font-geist antialiased min-h-screen text-gray-900 bg-gray-50 flex flex-col">
         <Header />
-        <div className="flex min-h-[calc(100vh-64px)]">
+        <div className="flex flex-1 min-h-[calc(100vh-64px)]">
           <Sidebar />
           <main className="flex-1 p-4 md:p-6 lg:p-8">
             {children}
           </main>
         </div>
+        <Footer />
       </body>
     </html>
   );

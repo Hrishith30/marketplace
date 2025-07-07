@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,6 +11,7 @@ import { ArrowLeft, Upload, X } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import { Country, State, City } from "country-state-city";
 
 const categories = [
   "Electronics",
@@ -55,13 +56,162 @@ const categories = [
   "Community"
 ];
 
+// Generate popular locations from ALL countries in the world
+// Load ALL USA states, cities, and villages
+const generatePopularLocations = () => {
+  const locations: Location[] = [];
+  
+  try {
+    const country = Country.getCountryByCode('US');
+    if (!country) return locations;
+    
+            // Add USA as a country option
+        locations.push({
+          display: `USA`,
+          full: `USA`,
+          city: '',
+          country: 'USA',
+          state: '',
+          code: 'US'
+        });
+    
+    // Get ALL states in USA
+    const states = State.getStatesOfCountry('US');
+    console.log(`Loading ${states.length} states in USA`);
+    
+    states.forEach((state: { name: string; isoCode: string }) => {
+                // Add state
+          locations.push({
+            display: `${state.name}, US`,
+            full: `${state.name}, USA`,
+            city: '',
+            country: 'USA',
+            state: state.name,
+            code: 'US'
+          });
+      
+      // Get ALL cities for this state
+      const cities = City.getCitiesOfState('US', state.isoCode);
+      console.log(`Loading ${cities.length} cities for ${state.name}`);
+      
+      cities.forEach((city: { name: string }) => {
+        locations.push({
+          display: `${city.name}, US`,
+          full: `${city.name}, ${state.name}, USA`,
+          city: city.name,
+          country: 'USA',
+          state: state.name,
+          code: 'US'
+        });
+      });
+    });
+  } catch (error) {
+    console.log('Error loading USA locations:', error);
+  }
+  
+  console.log(`Generated ${locations.length} USA locations`);
+  return locations.sort((a, b) => a.display.localeCompare(b.display));
+};
+
+// Search ONLY USA locations with caching
+const locationCache = new Map<string, Location[]>();
+
+const searchLocations = (searchTerm: string): Location[] => {
+  const locations: Location[] = [];
+  const term = searchTerm.toLowerCase();
+  
+  if (term.length < 4) return locations; // Only search for 4+ characters as requested
+  
+  // Check cache first
+  if (locationCache.has(term)) {
+    return locationCache.get(term) || [];
+  }
+  
+  try {
+    const country = Country.getCountryByCode('US');
+    if (!country) return locations;
+    
+    // Check if USA matches
+    if (country.name.toLowerCase().includes(term)) {
+      locations.push({
+        display: `USA`,
+        full: `USA`,
+        city: '',
+        country: 'USA',
+        state: '',
+        code: 'US'
+      });
+    }
+    
+    // Get ALL states in USA
+    const states = State.getStatesOfCountry('US');
+    
+    // Search through ALL states
+    for (const state of states) {
+      try {
+        // Check if state name matches
+        if (state.name.toLowerCase().includes(term)) {
+          locations.push({
+            display: `${state.name}, US`,
+            full: `${state.name}, USA`,
+            city: '',
+            country: 'USA',
+            state: state.name,
+            code: 'US'
+          });
+        }
+        
+        // Get ALL cities for this state
+        const cities = City.getCitiesOfState('US', state.isoCode);
+        
+        // Filter cities that match the search term
+        const matchingCities = cities.filter((city: { name: string }) => 
+          city.name.toLowerCase().includes(term)
+        );
+        
+        // Add ALL matching cities
+        matchingCities.forEach((city: { name: string }) => {
+          locations.push({
+            display: `${city.name}, US`,
+            full: `${city.name}, ${state.name}, USA`,
+            city: city.name,
+            country: 'USA',
+            state: state.name,
+            code: 'US'
+          });
+        });
+        
+        if (locations.length >= 200) break; // Limit to 200 results
+      } catch (error) {
+        console.log(`Error searching cities in ${state.name}:`, error);
+      }
+    }
+    
+    // Cache the results
+    locationCache.set(term, locations);
+    
+  } catch (error) {
+    console.log('Error searching USA locations:', error);
+  }
+  
+  console.log(`Found ${locations.length} USA locations matching: ${searchTerm}`);
+  return locations.slice(0, 200); // Return up to 200 results
+};
+
 interface ImageFile {
   file: File;
   preview: string;
   uploadedUrl?: string;
 }
 
-
+interface Location {
+  display: string;
+  full: string;
+  city: string;
+  country: string;
+  state?: string;
+  code: string;
+}
 
 export default function CreateListingPage() {
   const router = useRouter();
@@ -76,6 +226,103 @@ export default function CreateListingPage() {
   const [images, setImages] = useState<ImageFile[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
+  const [currentPreviewImage, setCurrentPreviewImage] = useState(0);
+  const [locationSearch, setLocationSearch] = useState("");
+  const [filteredLocations, setFilteredLocations] = useState<Location[]>([]);
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const [isLoadingLocations, setIsLoadingLocations] = useState(true);
+
+  // Initialize locations from country-state-city
+  useEffect(() => {
+    const initializeLocations = () => {
+      setIsLoadingLocations(true);
+      try {
+        const locations = generatePopularLocations();
+        setFilteredLocations(locations);
+        console.log(`Successfully loaded ${locations.length} popular locations`);
+      } catch (error) {
+        console.error('Error loading locations:', error);
+      } finally {
+        setIsLoadingLocations(false);
+      }
+    };
+    
+    initializeLocations();
+  }, []);
+
+  // Store popular locations in state to avoid regenerating
+  const [popularLocations, setPopularLocations] = useState<Location[]>([]);
+
+  // Initialize locations from country-state-city
+  useEffect(() => {
+    const initializeLocations = () => {
+      setIsLoadingLocations(true);
+      try {
+        const locations = generatePopularLocations();
+        setPopularLocations(locations);
+        setFilteredLocations(locations);
+        console.log(`Successfully loaded ${locations.length} popular locations`);
+      } catch (error) {
+        console.error('Error loading locations:', error);
+      } finally {
+        setIsLoadingLocations(false);
+      }
+    };
+    
+    initializeLocations();
+  }, []);
+
+  // Filter locations based on search with debouncing
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (!locationSearch.trim()) {
+        // Show all loaded locations when search is empty
+        setFilteredLocations(popularLocations);
+      } else {
+        const searchTerm = locationSearch.toLowerCase();
+        
+        // First try to filter from existing popular locations
+        let filtered = popularLocations.filter((location: Location) =>
+          location.city.toLowerCase().includes(searchTerm) ||
+          location.country.toLowerCase().includes(searchTerm) ||
+          location.display.toLowerCase().includes(searchTerm) ||
+          (location.state && location.state.toLowerCase().includes(searchTerm))
+        );
+        
+        // If no results or few results, use dynamic search (only for 4+ characters as requested)
+        if (filtered.length < 3 && searchTerm.length >= 4) {
+          try {
+            const searchResults = searchLocations(searchTerm);
+            if (searchResults.length > 0) {
+              // Combine and deduplicate results
+              const combined = [...filtered, ...searchResults];
+              const unique = combined.filter((location, index, self) => 
+                index === self.findIndex(l => l.display === location.display)
+              );
+              filtered = unique.slice(0, 100); // Show up to 100 results
+            }
+          } catch (error) {
+            console.log('Error in dynamic search:', error);
+          }
+        }
+        
+        setFilteredLocations(filtered);
+      }
+    }, 300); // Reduced debounce to 300ms for faster response
+
+    return () => clearTimeout(timeoutId);
+  }, [locationSearch, popularLocations]);
+
+  // Auto-slideshow for preview images
+  useEffect(() => {
+    if (images.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentPreviewImage((prev) => (prev + 1) % images.length);
+    }, 3000); // Change image every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [images.length]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -238,7 +485,7 @@ export default function CreateListingPage() {
   const isFormValid = formData.title && formData.price && formData.category && formData.location && formData.seller_email;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center space-x-4">
         <Link href="/">
@@ -252,7 +499,10 @@ export default function CreateListingPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+        {/* Form Section */}
+        <div className="h-full">
+          <form onSubmit={handleSubmit} className="space-y-6 h-full">
         {/* Basic Information */}
         <Card>
           <CardHeader>
@@ -331,10 +581,17 @@ export default function CreateListingPage() {
               <div className="space-y-2">
                 <Label htmlFor="category">Category *</Label>
                 <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent 
+                    className="select-content-wide"
+                    style={{ 
+                      minWidth: '500px !important', 
+                      width: '500px !important',
+                      maxWidth: 'none !important'
+                    }}
+                  >
                     {categories.map(category => (
                       <SelectItem key={category} value={category}>
                         {category}
@@ -346,13 +603,48 @@ export default function CreateListingPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="location">Location *</Label>
-                <Input
-                  id="location"
-                  placeholder="City, State"
-                  value={formData.location}
-                  onChange={(e) => handleInputChange("location", e.target.value)}
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    placeholder={isLoadingLocations ? "Loading USA locations..." : "Location"}
+                    value={formData.location}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      handleInputChange("location", value);
+                      setLocationSearch(value);
+                    }}
+                    onFocus={() => setShowLocationDropdown(true)}
+                    className="w-full"
+                    disabled={isLoadingLocations}
+                  />
+                  {isLoadingLocations && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+                    </div>
+                  )}
+                  {showLocationDropdown && filteredLocations.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto">
+                      {filteredLocations.slice(0, 100).map((location, index) => (
+                        <button
+                          key={`${location.city}-${location.code}-${index}`}
+                          type="button"
+                          className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center justify-between"
+                          onClick={() => {
+                            handleInputChange("location", location.full);
+                            setLocationSearch("");
+                            setShowLocationDropdown(false);
+                          }}
+                        >
+                          <div className="flex items-center">
+                            <div>
+                              <div className="font-medium">{location.display}</div>
+                              <div className="text-sm text-gray-500">{location.full}</div>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -437,7 +729,95 @@ export default function CreateListingPage() {
             {isSubmitting ? "Creating..." : "Create Listing"}
           </Button>
         </div>
-      </form>
+          </form>
+        </div>
+
+        {/* Preview Section */}
+        <div>
+          <Card className="bg-white border border-gray-200 shadow-sm">
+            <CardHeader className="pb-1">
+              <CardTitle className="text-base text-gray-800">Live Preview</CardTitle>
+              <CardDescription className="text-xs text-gray-500">
+                How your listing will appear to buyers
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-1">
+              {/* Image Preview */}
+              <div 
+                className="aspect-square bg-gray-100 rounded-lg overflow-hidden border border-gray-200 relative"
+              >
+                {images.length > 0 ? (
+                  <img
+                    src={images[currentPreviewImage].preview}
+                    alt="Preview"
+                    className="w-full h-full object-cover transition-all duration-300"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-50">
+                    <div className="text-center">
+                      <Upload className="h-6 w-6 mx-auto mb-1" />
+                      <p className="text-xs">No image</p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Thumbnails for multiple images */}
+                {images.length > 1 && (
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-1">
+                    {images.map((img, idx) => (
+                      <button
+                        key={img.preview}
+                        className={`w-2 h-2 rounded-full border border-white ${
+                          idx === currentPreviewImage ? 'bg-white' : 'bg-white/50'
+                        }`}
+                        onClick={() => setCurrentPreviewImage(idx)}
+                        aria-label={`Show image ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Title */}
+              <div>
+                <h3 className="font-semibold text-sm text-gray-900 truncate">
+                  {formData.title || "Your listing title will appear here"}
+                </h3>
+              </div>
+
+              {/* Price and Location Row */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-lg font-bold text-[#1877F2]">
+                    {formData.price ? `$${parseFloat(formData.price).toLocaleString()}` : "$0.00"}
+                  </p>
+                </div>
+                <div className="flex items-center text-xs text-gray-500">
+                  <span>📍 {formData.location || "Location"}</span>
+                </div>
+              </div>
+
+              {/* Description */}
+              {formData.description && (
+                <div className="overflow-hidden">
+                  <p className="text-xs text-gray-600 leading-relaxed break-words">
+                    {formData.description}
+                  </p>
+                </div>
+              )}
+
+              {/* Category */}
+              {formData.category && (
+                <div>
+                  <span className="inline-block bg-[#1877F2]/10 text-[#1877F2] px-2 py-1 rounded-full text-xs font-medium">
+                    {formData.category}
+                  </span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 } 

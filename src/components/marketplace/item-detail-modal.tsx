@@ -112,8 +112,8 @@ export default function ItemDetailModal({ item, isOpen, onClose }: ItemDetailMod
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={handleClose}>
+      <div className="bg-white rounded-lg w-full max-h-[90vh] overflow-y-auto" style={{ maxWidth: '1500px' }} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold text-gray-900">Item Details</h2>
@@ -201,7 +201,9 @@ export default function ItemDetailModal({ item, isOpen, onClose }: ItemDetailMod
               {/* Description */}
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">Description</h3>
-                <p className="text-gray-700 leading-relaxed">{item.description}</p>
+                <div className="overflow-hidden">
+                  <p className="text-gray-700 leading-relaxed break-words">{item.description}</p>
+                </div>
               </div>
 
               <Separator />
@@ -213,6 +215,12 @@ export default function ItemDetailModal({ item, isOpen, onClose }: ItemDetailMod
                     <MessageCircle className="h-5 w-5 mr-2" />
                     Message Seller
                   </CardTitle>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Contact: {item.sellerEmail}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Location: {item.location}
+                  </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
@@ -229,11 +237,11 @@ export default function ItemDetailModal({ item, isOpen, onClose }: ItemDetailMod
                     />
                   </div>
                   <Textarea
-                    placeholder="Hi! I&apos;m interested in this item. Could you tell me more about it?"
+                    placeholder="Hi! I am interested in this item. Could you tell me more about it?"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    rows={4}
-                    className="resize-none"
+                    rows={6}
+                    className="resize-none min-h-[110px]"
                   />
                   <Button 
                     onClick={handleSendMessage}

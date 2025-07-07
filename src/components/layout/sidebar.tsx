@@ -82,25 +82,25 @@ const categories = [
 
 export function Sidebar() {
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 overflow-y-auto h-[calc(100vh-64px)]">
+    <aside className="w-64 bg-white border-r border-gray-200 overflow-y-auto h-[calc(100vh-64px)] shadow-sm scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
       <div className="p-6">
         {/* Categories Header */}
-        <div className="mb-6">
-          <h3 className="font-semibold text-gray-900 text-lg">Categories</h3>
-          <p className="text-sm text-gray-500 mt-1">Browse by category</p>
+        <div className="mb-8">
+          <h3 className="font-bold text-gray-900 text-xl mb-2">Categories</h3>
+          <p className="text-sm text-gray-500">Browse by category</p>
         </div>
 
         {/* Categories List */}
-        <nav className="space-y-1">
+        <nav className="space-y-2">
           {categories.map((category) => (
             <a
               key={category.name}
               href={category.href || `/category/${category.name.toLowerCase().replace(/\s+/g, '-')}`}
-              className="flex items-center px-3 py-3 rounded-lg text-gray-700 hover:bg-gray-200 hover:text-[#1877F2] transition-colors duration-200 group"
+              className="flex items-center px-4 py-3 rounded-xl text-gray-700 hover:bg-[#1877F2]/5 hover:text-[#1877F2] hover:shadow-sm transition-all duration-200 group border border-transparent hover:border-[#1877F2]/20"
             >
               <div className="flex items-center space-x-3">
-                <category.icon className="h-5 w-5 text-gray-400 group-hover:text-[#1877F2] transition-colors" />
-                <span className="text-sm font-medium">{category.name}</span>
+                <category.icon className="h-5 w-5 text-gray-500 group-hover:text-[#1877F2] transition-colors duration-200" />
+                <span className="text-sm font-medium group-hover:font-semibold transition-all duration-200">{category.name}</span>
               </div>
             </a>
           ))}

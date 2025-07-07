@@ -19,11 +19,14 @@ export function CategoryPageClient({ categoryName }: CategoryPageClientProps) {
   const [listings, setListings] = useState<Listing[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPriceRange, setSelectedPriceRange] = useState("all");
+  const [loading, setLoading] = useState(true);
 
   // Fetch listings for this category
   useEffect(() => {
     async function fetchCategoryListings() {
       try {
+        console.log('Fetching listings for category:', categoryName);
+        
         const { data, error } = await supabase
           .from('listings')
           .select('*')
@@ -35,9 +38,14 @@ export function CategoryPageClient({ categoryName }: CategoryPageClientProps) {
           return;
         }
 
+        console.log(`Found ${data?.length || 0} listings for category: ${categoryName}`);
+        console.log('Listings data:', data);
+        
         setListings(data || []);
       } catch (error) {
         console.error('Exception:', error);
+      } finally {
+        setLoading(false);
       }
     }
 
@@ -99,68 +107,16 @@ export function CategoryPageClient({ categoryName }: CategoryPageClientProps) {
     notFound();
   }
 
-  // If no items found, show "No items found" message
-  if (filteredItems.length === 0) {
-    return (
-      <div className="space-y-6">
-        {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center space-x-4">
-            <Link href="/">
-              <Button variant="ghost" size="sm" className="p-2">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{categoryName}</h1>
-              <p className="text-gray-600 mt-1">0 items in {categoryName}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* No items found message */}
-        <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
-            <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-            </svg>
-          </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No items found</h3>
-          <p className="text-gray-500 mb-6 max-w-md">
-            There are currently no items in the {categoryName} category. Be the first to list something!
-          </p>
-          <Link href="/create" className="inline-block">
-            <Button className="bg-[#1877F2] hover:bg-[#166FE5] text-white px-6 py-2 rounded-full shadow-md">
-              Create listing
-            </Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center space-x-4">
-          <Link href="/">
-            <Button variant="ghost" size="sm" className="p-2">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{categoryName}</h1>
-            <p className="text-gray-600 mt-1">{filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''} in {categoryName}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Results Count */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-600">
-          {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''} found
-        </p>
+      <div className="flex items-center space-x-4">
+        <Link href="/">
+          <Button variant="ghost" size="sm" className="p-2">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        </Link>
+        <h1 className="text-2xl font-bold text-gray-900">{categoryName}</h1>
       </div>
 
       {/* Search and Filters */}
@@ -198,8 +154,43 @@ export function CategoryPageClient({ categoryName }: CategoryPageClientProps) {
         </div>
       </div>
 
-      {/* Items Grid */}
-      <ItemGrid items={filteredItems} />
+      {/* Results Count */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-600">
+          {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''} found
+        </p>
+      </div>
+
+      {/* Loading State */}
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1877F2] mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading listings...</p>
+          </div>
+        </div>
+      ) : filteredItems.length === 0 ? (
+        /* Create first listing message */
+        <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+          <div className="w-24 h-24 bg-[#1877F2]/10 rounded-full flex items-center justify-center mb-6">
+            <svg className="w-12 h-12 text-[#1877F2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">Be the First to List in {categoryName}!</h3>
+          <p className="text-gray-600 mb-8 max-w-md text-lg">
+            This category is empty. Start the marketplace by creating the first listing in {categoryName}.
+          </p>
+          <Link href="/create" className="inline-block">
+            <Button className="bg-[#1877F2] hover:bg-[#166FE5] text-white px-8 py-3 rounded-full shadow-lg text-lg font-semibold transform hover:scale-105 transition-all duration-200">
+              Create First Listing
+            </Button>
+          </Link>
+        </div>
+      ) : (
+        /* Items Grid */
+        <ItemGrid items={filteredItems} />
+      )}
     </div>
   );
 } 
